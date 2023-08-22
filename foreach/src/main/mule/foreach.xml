@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="5ad3c074-f094-4bb9-9a50-835a836618f2" >
+		<http:listener-connection host="localhost" port="8093" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="c901c089-cc8b-4bbe-b81e-0fa964fa9721" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="123456789" database="foreachschema" />
+	</db:config>
+	<flow name="foreachFlow" doc:id="1c0f74bc-ba31-45cc-a97d-52eefe61f36f" >
+		<http:listener doc:name="Listener" doc:id="81b38586-8db6-47d9-a72a-bd8fb4088a17" config-ref="HTTP_Listener_config" path="foreachschema"/>
+		<ee:transform doc:name="Transform Message" doc:id="8a86a134-7794-422e-a0f3-9a291e4c2e90" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+1 to 20 map
+	{
+	"empid":  1 + $$,
+	"empsal": "10000",
+	"empname": "madan"
+}
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="aad2bfb2-d7ed-48d3-a967-6d70a1445e15" collection="#[payload]">
+			<logger level="INFO" doc:name="Logger" doc:id="7306c4da-fd95-4876-bfed-6812a178082e" message="#[payload]" />
+			<db:insert doc:name="Insert" doc:id="22d1e641-e03f-45eb-aa6a-50315143dab7" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into foreachschema.emp (empid, empsal, empname) values (:empid, :empsal, :empname);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+		</db:insert>
+			<logger level="INFO" doc:name="Logger" doc:id="63710048-b21d-4fa9-870e-b08f4c3588a6" message="#[payload]" />
+		</foreach>
+	</flow>
+</mule>
